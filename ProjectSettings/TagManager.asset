@@ -12,6 +12,8 @@ TagManager:
   - DamageEffect
   - AudioSource
   - GunOrigin
+  - Target
+  - RegenCircle
   layers:
   - Default
   - TransparentFX

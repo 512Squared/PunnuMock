@@ -332,7 +332,7 @@ MonoBehaviour:
   arcTiltAngle: -11
   hasTarget: 0
   turretState: 0
-  obstacleBlocking: 0
+  isObstacleBlocking: 0
   insideBarrelAngle: 0
   insideTurretArc: 0
   mainCamera: {fileID: 0}
@@ -355,5 +355,5 @@ MonoBehaviour:
   laserProjectileSpeed: 80
   damage: 10
   spreadBullets: 1
-  bulletSpread: {x: 0.2, y: 0.2, z: 0.2}
+  bulletSpread: {x: 0.1, y: 0.1, z: 0.1}
   selectedProjectileIndex: 0

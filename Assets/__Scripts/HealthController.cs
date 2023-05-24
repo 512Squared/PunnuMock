@@ -18,6 +18,10 @@ namespace __Scripts
         
         [Title("Settings")]
         [SerializeField] private bool canRegenerate;
+        [ShowIf("canRegenerate")] 
+        public bool regenInHealingCircleOnly;
+
+        
         [ShowIf("canRegenerate")]
         [SerializeField][PropertySpace(SpaceBefore = 0, SpaceAfter = 10)] private float regenSpeed = 2;
         [SerializeField] private Image bloodSplatter;
@@ -28,6 +32,8 @@ namespace __Scripts
         [ShowIf("canRegenerate")]
         [SerializeField]
         private bool isRegenerating;
+        
+        private Coroutine regenCoroutine;
 
 
         private void Start()
@@ -38,14 +44,43 @@ namespace __Scripts
 
         private void Update()
         {
-            if (!canRegenerate || isRegenerating || health >= maxHealth) return;
+            if (!canRegenerate || isRegenerating || health >= maxHealth || regenInHealingCircleOnly) return;
 
             foreach (Turret turret in TurretsManager.Instance.GetTurretList())
-                if (turret.HasTarget)
-                    return;
+                if (turret.CanAttackTarget())
+                    return; // stops regen when being attacked
 
             StartCoroutine(HealthRegeneration());
         }
+        
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag("RegenCircle"))
+            {
+                if (regenInHealingCircleOnly && regenCoroutine == null)
+                {
+                    regenCoroutine = StartCoroutine(HealthRegeneration());
+                    StartCoroutine(AudioController.FadeInClip(AudioController.Instance.GetHealing(), 0.3f, AudioController.Instance.healingAudioSource, 0.162f));
+                    Debug.Log($"Regen has begun");
+                }
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag("RegenCircle")) 
+            {
+                if(regenInHealingCircleOnly && regenCoroutine != null)
+                {
+                    StopCoroutine(regenCoroutine);
+                    StartCoroutine(AudioController.FadeOutClip(7f, AudioController.Instance.healingAudioSource));
+                    regenCoroutine = null;
+                    Debug.Log($"Regen has ended");
+                }
+                
+            }
+        }
+        
 
         /// <summary>
         /// Implements the IDamageable interface, but also invokes a system event to update the UI and health bars. Sends an 'hit' impulse to the camera (some juice)
@@ -72,14 +107,6 @@ namespace __Scripts
             isRegenerating = true;
             while (health < maxHealth)
             {
-                // Regen needs to stop when being attacked
-                foreach (Turret turret in TurretsManager.Instance.GetTurretList())
-                    if (turret.CanAttackTarget())
-                    {
-                        isRegenerating = false;
-                        yield break;
-                    }
-
                 yield return new WaitForSeconds(regenSpeed);
                 health += maxHealth * 0.1f;
                 health = Mathf.Min(health, maxHealth);
@@ -114,5 +141,6 @@ namespace __Scripts
             if (DOTween.IsTweening(bloodSplatter)) DOTween.Kill(bloodSplatter);
             bloodSplatter.DOFade(splatterAlpha.a, 0.5f);
         }
+
     }
 }

@@ -7,16 +7,11 @@ namespace __Scripts
     public class Prefabs : MonoBehaviour
     {
         public static Prefabs ProjectPrefabs;
-        
         public GameObject LaserProjectile => laserProjectiles[indexLP];
-        public GameObject MissileProjectile => missileProjectiles[indexMP];
-
         [SerializeField] private GameObject[] laserProjectiles;
         [SerializeField] private GameObject[] missileProjectiles;
         
-
         private int indexLP;
-        private int indexMP;
         public GameObject[] LaserProjectiles => laserProjectiles;
 
         public static Prefabs Fetch
@@ -33,11 +28,5 @@ namespace __Scripts
             if (index >= 0 && index < laserProjectiles.Length) indexLP = index;
             ProjectilePool.Instance.SetProjectileType(LaserProjectiles[indexLP]);
         }
-        
-        public void SetMissileProjectileIndex(int index)
-        {
-            if (index >= 0 && index < laserProjectiles.Length) indexLP = index;
-        }
-
     }
 }

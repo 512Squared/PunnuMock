@@ -18,7 +18,7 @@ namespace __Scripts
 
         public void Return(GameObject objectToReturn)
         {
-            if (objectToReturn == null) return;
+            if (objectToReturn == null) return; // coroutine for Return() means delay creates nulls after SetProjectileType() is called)
             objectToReturn.SetActive(false);
             pool.Enqueue(objectToReturn);
         }
@@ -33,7 +33,7 @@ namespace __Scripts
             }
         }
         /// <summary>
-        /// This is purely for setup - allowing the DEV to experiment with different prefabs
+        /// This is purely for setup - allows Devs to easily experiment with different prefabs during game play
         /// </summary>
         /// <param name="newProjectilePrefab"></param>
         public void SetProjectileType(GameObject newProjectilePrefab)

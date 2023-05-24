@@ -1,13 +1,8 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using DG.Tweening;
 using Sirenix.OdinInspector;
-using Sirenix.Serialization;
-using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.UI;
 using Random = UnityEngine.Random;
-
 
 namespace __Scripts
 {
@@ -17,58 +12,71 @@ namespace __Scripts
 
         [PropertySpace(SpaceBefore = 10)]
         [Tooltip("Switch on for component specific console debugging and to make range and arc gizmos visible during setup")]
-        [SerializeField] private bool debugOn;
-        [Tooltip("Tilts the arc and range gizmo - useful for fine-tuning")]
-        [SerializeField][ShowIf("debugOn")] private float arcTiltAngle;
-        
+        [SerializeField]
+        private bool debugOn;
+
+        [Tooltip("Tilts the arc and range gizmo - useful for fine-tuning")] [SerializeField] [ShowIf("debugOn")]
+        private float arcTiltAngle;
+
 
         [Title("Info Only", horizontalLine: true)] [SerializeField]
         private bool hasTarget;
 
         [ShowIf("hasTarget")] [SerializeField] private TurretState turretState = TurretState.Idle;
-        [ShowIf("hasTarget")] [SerializeField] private bool obstacleBlocking;
+        [ShowIf("hasTarget")] [SerializeField] private bool isObstacleBlocking;
         [ShowIf("hasTarget")] [SerializeField] private bool insideBarrelAngle;
         [ShowIf("hasTarget")] [SerializeField] private bool insideTurretArc;
 
-        [Title("Components", horizontalLine: true)] [SerializeField]
-        [Tooltip("Main Camera - used to call camera shake for hits")]
+        [Title("Components", horizontalLine: true)] [SerializeField] [Tooltip("Main Camera - used to call camera shake for hits")]
         public Animation mainCamera;
-        [Tooltip("Turret's gun")]
-        [SerializeField] private Transform turretGun;
-        [Tooltip("Turret's rotating base - gun's parent object")]
-        [SerializeField] private Transform turretBase;
-        [Tooltip("Turret's top-level parent")]
-        [SerializeField] private Transform turretContainer;
-        [Tooltip("A transform child for setting exit point for projectiles and muzzle flash")]
-        [SerializeField] private Transform muzzleFlashPoint;
 
-        [Title("Settings", horizontalLine: true)] 
-        [Tooltip("Layer for targets - usually Player")]
-        [SerializeField] private LayerMask targetMask;
-        [Tooltip("Layer for obstacles in the scene that Player can hide behind")]
-        [SerializeField] private LayerMask obstacleMask;
-        [Tooltip("Turret's range")]
-        [SerializeField] private float range = 10f;
-        [Tooltip("Width of the targeting arc - switch debug on to make visible in Scene view")]
-        [SerializeField] private float turretTargetArc;
-        [Tooltip("An area just below the turret that is a safe zone creating by barrel minimum elevation")]
-        [SerializeField] private float safeZoneRange = 10f;
-        [Tooltip("Vertical arc for gun barrel - used for targeting")]
-        [SerializeField] private float turretFiringAngle = 30f;
-        [Tooltip("Used for fine-tuning gun direction when targeting")]
-        [SerializeField] private float turretGunElevationOffset;
-        [Tooltip("Cooldown between attacks")]
-        [SerializeField] private float attackCooldown = 1f;
-        
-        [Title("Projectile", horizontalLine: true)]
-        [Tooltip("Speed of the projectile - increase to hit moving target")]
-        [SerializeField] private float laserProjectileSpeed;
-        [Tooltip("Projectile damage - value is passed to turret projectile on instantiation")]
-        [SerializeField] private int damage = 10;
-        [Tooltip("Add targeting variance")]
-        [SerializeField] private bool spreadBullets;
-        [Tooltip("Amount of variance to add +-")]
-        [SerializeField] [ShowIf("spreadBullets")] private Vector3 bulletSpread = new (0.1f,0.1f,0.1f);
+        [Tooltip("Turret's gun")] [SerializeField]
+        private Transform turretGun;
+
+        [Tooltip("Turret's rotating base - gun's parent object")] [SerializeField]
+        private Transform turretBase;
+
+        [Tooltip("Turret's top-level parent")] [SerializeField]
+        private Transform turretContainer;
+
+        [Tooltip("A transform child for setting exit point for projectiles and muzzle flash")] [SerializeField]
+        private Transform muzzleFlashPoint;
+
+        [Title("Settings", horizontalLine: true)] [Tooltip("Layer for targets - usually Player")] [SerializeField]
+        private LayerMask targetMask;
+
+        [Tooltip("Layer for obstacles in the scene that Player can hide behind")] [SerializeField]
+        private LayerMask obstacleMask;
+
+        [Tooltip("Turret's range")] [SerializeField]
+        private float range = 10f;
+
+        [Tooltip("Width of the targeting arc - switch debug on to make visible in Scene view")] [SerializeField]
+        private float turretTargetArc;
+
+        [Tooltip("An area just below the turret that is a safe zone creating by barrel minimum elevation")] [SerializeField]
+        private float safeZoneRange = 10f;
+
+        [Tooltip("Vertical arc for gun barrel - used for targeting")] [SerializeField]
+        private float turretFiringAngle = 30f;
+
+        [Tooltip("Used for fine-tuning gun direction when targeting")] [SerializeField]
+        private float turretGunElevationOffset;
+
+        [Tooltip("Cooldown between attacks")] [SerializeField]
+        private float attackCooldown = 1f;
+
+        [Title("Projectile", horizontalLine: true)] [Tooltip("Speed of the projectile - increase to hit moving target")] [SerializeField]
+        private float laserProjectileSpeed;
+
+        [Tooltip("Projectile damage - value is passed to turret projectile on instantiation")] [SerializeField]
+        private int damage = 10;
+
+        [Tooltip("Add targeting variance")] [SerializeField]
+        private bool spreadBullets;
+
+        [Tooltip("Amount of variance to add +-")] [SerializeField] [ShowIf("spreadBullets")]
+        private Vector3 bulletSpread = new(0.1f, 0.1f, 0.1f);
 
         // non-visible members
         private Vector3 gunOrigin;
@@ -80,7 +88,7 @@ namespace __Scripts
         private Color debugObstacleColor = Color.yellow;
         private float timeSinceLastAttack;
         public int selectedProjectileIndex = 0;
-        
+
         public bool HasTarget => hasTarget;
 
         // FSM for turret's firing system
@@ -116,9 +124,9 @@ namespace __Scripts
             if (targetsInRange.Length < 1)
             {
                 hasTarget = false;
-                obstacleBlocking = false;
+                isObstacleBlocking = false;
                 turretState = TurretState.Idle;
-                ReturnToDefaultPosition();
+                ReturnGunToDefaultPosition();
                 if (lastObstacleRenderer != null)
                 {
                     lastObstacleRenderer.material.color = lastObstacleColor;
@@ -133,21 +141,22 @@ namespace __Scripts
                 if (target.CompareTag("Player"))
                 {
                     if (turretState != TurretState.ReadyToFire) AimAtTarget(targetsInRange[0].transform);
-                    
+
                     HeadTransform headTransform = target.GetComponentInChildren<HeadTransform>(); // optional for fine-tuning impact point on target
                     Vector3 impactPoint = headTransform ? headTransform.transform.position : target.transform.position;
-                    
-                    obstacleBlocking = ProcessTargetingFSM(target, impactPoint);
-                    
-                    Debug.Log($"TARGET availability: State - Angle - Arc - Obstacle \nFSM : {turretState} | TRUE :  {insideBarrelAngle} | TRUE : {insideTurretArc} | FALSE : {obstacleBlocking}");
+
+                    isObstacleBlocking = ProcessTargetingFSM(target, impactPoint);
+
+                    Debug.Log(
+                        $"TARGET availability: State - Angle - Arc - Obstacle \nFSM : {turretState} | TRUE :  {insideBarrelAngle} | TRUE : {insideTurretArc} | FALSE : {isObstacleBlocking}");
 
                     if ((target.transform.position - transform.position).magnitude < safeZoneRange)
                     {
                         hasTarget = false;
                         break; // abort attack sequence if inside safe zone below turret
                     }
-                    
-                    if (turretState == TurretState.ReadyToFire && insideTurretArc && insideBarrelAngle && !obstacleBlocking)
+
+                    if (turretState == TurretState.ReadyToFire && insideTurretArc && insideBarrelAngle && !isObstacleBlocking)
                     {
                         PerformAttack(target.transform);
                         Debug.Log($"Perform Attack called");
@@ -156,7 +165,7 @@ namespace __Scripts
 
                     if (turretState is TurretState.Attacking or TurretState.ReadyToFire)
                     {
-                        hasTarget = true; 
+                        hasTarget = true;
                         break;
                     }
                 }
@@ -172,7 +181,7 @@ namespace __Scripts
         #endregion
 
         #region Main Methods
-        
+
         /// <summary>
         /// Calculates horizontal direction to target & rotates turret base horizontally, then calculates vertical direction of barrel to target & rotates barrel vertically. Tween provides for smooth movement. Separating out the horizontal and vertical movements gives natural turret-like behaviour.  
         /// </summary>
@@ -186,7 +195,7 @@ namespace __Scripts
 
             HeadTransform headTransform = target.GetComponentInChildren<HeadTransform>(); // optional for fine-tuning impact point on target
             Vector3 impactPoint = headTransform ? headTransform.transform.position : target.transform.position;
-            
+
             // Rotate the turret barrel vertically to aim at the target
             Vector3 directionToTargetFromBarrel = (impactPoint - turretGun.position).normalized;
 
@@ -217,13 +226,13 @@ namespace __Scripts
 
             float targetElevationAngle = Mathf.Asin(dirToTarget.y) * Mathf.Rad2Deg;
 
-            // Check if the target is in the vertical safe zone TODO: After adding safeZoneArc, this might be redundant (refactor)
+            // Check if the target is in the vertical safe zone TODO: After adding safeZoneArc, this might be redundant (refactor?)
             if (targetElevationAngle < turretFiringAngle)
             {
-                Debug.Log("Target is in the safe zone.");
+                if (debugOn) Debug.Log("Target is in the safe zone.");
                 hasTarget = false;
                 insideBarrelAngle = false;
-                return false; // treat this as an obstacle
+                return false; // treat this as an obstacle is the easiest
             }
 
             insideBarrelAngle = true;
@@ -240,7 +249,7 @@ namespace __Scripts
                 }
             }
 
-            if (lastObstacle != null) ClearLastObstacle();
+            if (lastObstacle != null) ClearLastObstacleColoration();
             switch (debugOn)
             {
                 case true when insideTurretArc:
@@ -276,26 +285,31 @@ namespace __Scripts
             else
             {
                 attack = false;
-                Debug.Log($"Still in COOLDOWN");
+                if (debugOn) Debug.Log($"Still in COOLDOWN");
             }
-            Debug.Log($"PerformAttack called on target: {target.name} | Attack: {attack}");
+
+            if (debugOn) Debug.Log($"PerformAttack called on target: {target.name} | Attack: {attack}");
         }
 
+        /// <summary>
+        /// Shoot() makes use of object pooling via ProjectPool on the Turret Manager game object. Targeting variance is also applied here (initial value 10%)
+        /// </summary>
         private void Shoot()
         {
             if (debugOn) Debug.Log($"SHOOT called");
             mainCamera.Play(mainCamera.clip.name);
-            
+
             GameObject newProjectile = ProjectilePool.Instance.Get();
             Projectile projectile = newProjectile.GetComponent<Projectile>();
             projectile.SetDamageAmount(damage);
-            
+
             ParticleSystem ps = newProjectile.GetComponent<ParticleSystem>();
             ParticleSystem.MainModule main = ps.main;
-            main.startSpeed = laserProjectileSpeed; 
-            
-            newProjectile.transform.position = muzzleFlashPoint.transform.position;
-            newProjectile.transform.rotation = muzzleFlashPoint.transform.rotation;
+            main.startSpeed = laserProjectileSpeed;
+
+            newProjectile.transform.position = muzzleFlashPoint.position; // Set the initial position to the muzzle's position
+            newProjectile.transform.forward = spreadBullets ? AddVariance(muzzleFlashPoint.forward) : muzzleFlashPoint.forward; // Set the direction
+            newProjectile.transform.rotation = muzzleFlashPoint.rotation;
             newProjectile.SetActive(true);
             ps.Play();
             StartCoroutine(ReturnToPoolAfterDelay(newProjectile, 5f));
@@ -304,26 +318,18 @@ namespace __Scripts
         #endregion
 
         #region Helper methods
-        /// <summary>
-        /// This helper method re-populates the projectile pool
-        /// </summary>
-        /// <param name="selectedIndex"></param>
-        private void HandleDropdownValueChanged(int selectedIndex)
-        {
-            ProjectilePool.Instance.SetProjectileType(Prefabs.Fetch.LaserProjectiles[selectedIndex]);
-        }
-        
+
         IEnumerator ReturnToPoolAfterDelay(GameObject obj, float delay)
         {
             yield return new WaitForSeconds(delay);
             ProjectilePool.Instance.Return(obj);
         }
-        
+
         public bool CanAttackTarget() => hasTarget;
 
         private void HasObstacle(Component obstacle, Vector3 dirToTarget)
         {
-            obstacleBlocking = true;
+            isObstacleBlocking = true;
             hasTarget = false;
 
             if (obstacle.transform != lastObstacle)
@@ -334,15 +340,15 @@ namespace __Scripts
                     lastObstacleRenderer = null;
                 }
 
-                SetNewObstacle(obstacle.transform);
+                SetNewObstacleColoration(obstacle.transform);
             }
 
-            if (lastObstacle == null) SetNewObstacle(obstacle.transform);
+            if (lastObstacle == null) SetNewObstacleColoration(obstacle.transform);
 
             if (debugOn) Debug.DrawRay(turretGun.position, dirToTarget * range, Color.red);
         }
 
-        private void SetNewObstacle(Transform newObstacle)
+        private void SetNewObstacleColoration(Transform newObstacle)
         {
             lastObstacle = newObstacle;
             lastObstacleRenderer = lastObstacle.GetComponent<Renderer>();
@@ -358,7 +364,7 @@ namespace __Scripts
             }
         }
 
-        private void ClearLastObstacle()
+        private void ClearLastObstacleColoration()
         {
             if (lastObstacleRenderer != null)
             {
@@ -373,7 +379,7 @@ namespace __Scripts
         /// <summary>
         /// Rotates base back to default and raises barrel to default
         /// </summary>
-        private void ReturnToDefaultPosition()
+        private void ReturnGunToDefaultPosition()
         {
             transform.DORotateQuaternion(defaultRotationBase, 2f);
             turretGun.DOLocalRotateQuaternion(defaultRotationBarrel, 2f);
@@ -385,20 +391,17 @@ namespace __Scripts
         /// <returns></returns>
         private Vector3 AddVariance(Vector3 direction)
         {
-            if (spreadBullets)
-            {
-                direction += new Vector3(
-                    Random.Range(-bulletSpread.x, bulletSpread.x),
-                    Random.Range(-bulletSpread.y, bulletSpread.y),
-                    Random.Range(-bulletSpread.z, bulletSpread.z));
-                
-                direction.Normalize();
-            }
+            Vector3 variance = new (
+                Random.Range(-bulletSpread.x, bulletSpread.x),
+                Random.Range(-bulletSpread.y, bulletSpread.y),
+                Random.Range(-bulletSpread.z, bulletSpread.z));
 
-            return direction;
+            direction += variance;
+
+            return direction.normalized;
         }
 
-        [HorizontalGroup("Split", 0.5f)]
+        [HorizontalGroup("Split", 0.5f)][Tooltip("Cycle through the projectiles prefab list")]
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodeMinus), GUIColor(0.8f, 0.5f, 0.17f)]
         public void PreviousProjectile()
         {
@@ -408,8 +411,8 @@ namespace __Scripts
                 Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
             }
         }
-        
-        [HorizontalGroup("Split", 0.5f)]
+
+        [HorizontalGroup("Split", 0.5f)][Tooltip("Cycle through the projectiles prefab list")]
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodePlus), GUIColor(1f, 1f, 0.215f)]
         public void NextProjectile()
         {
@@ -449,8 +452,7 @@ namespace __Scripts
                 Gizmos.DrawLine(turretContainer.position, turretContainer.position + direction * safeZoneRange);
             }
         }
-        
-        #endregion
 
+        #endregion
     }
 }
