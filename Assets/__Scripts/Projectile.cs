@@ -4,9 +4,9 @@ namespace __Scripts
 {
     public class Projectile : MonoBehaviour
     {
-        private new ParticleSystem particleSystem;
+        public new ParticleSystem particleSystem;
+        
         [SerializeField] private int damageAmount;
-
 
         private void Start()
         {

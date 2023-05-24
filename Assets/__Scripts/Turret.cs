@@ -1,8 +1,11 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using DG.Tweening;
 using Sirenix.OdinInspector;
 using Sirenix.Serialization;
+using UnityEditor.Rendering;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 
@@ -31,7 +34,7 @@ namespace __Scripts
         [Tooltip("Main Camera - used to call camera shake for hits")]
         public Animation mainCamera;
         [Tooltip("Turret's gun")]
-        private Transform turretGun;
+        [SerializeField] private Transform turretGun;
         [Tooltip("Turret's rotating base - gun's parent object")]
         [SerializeField] private Transform turretBase;
         [Tooltip("Turret's top-level parent")]
@@ -57,7 +60,7 @@ namespace __Scripts
         [Tooltip("Cooldown between attacks")]
         [SerializeField] private float attackCooldown = 1f;
         
-        [Title("Projectile", horizontalLine: true)] 
+        [Title("Projectile", horizontalLine: true)]
         [Tooltip("Speed of the projectile - increase to hit moving target")]
         [SerializeField] private float laserProjectileSpeed;
         [Tooltip("Projectile damage - value is passed to turret projectile on instantiation")]
@@ -76,6 +79,7 @@ namespace __Scripts
         private Color lastObstacleColor;
         private Color debugObstacleColor = Color.yellow;
         private float timeSinceLastAttack;
+        public int selectedProjectileIndex = 0;
         
         public bool HasTarget => hasTarget;
 
@@ -92,18 +96,12 @@ namespace __Scripts
 
         #region Callbacks
 
-        private IEnumerator Start()
+        private void Start()
         {
             Cursor.visible = false;
             defaultRotationBase = transform.rotation;
             defaultRotationBarrel = turretGun.localRotation;
-            while (!TurretsManager.Instance) yield return null;
-            TurretsManager.Instance.turretList.Add(this);
-        }
-
-        private void OnDestroy()
-        {
-            TurretsManager.Instance.turretList.Remove(this);
+            Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
         }
 
         /// <summary>
@@ -303,11 +301,17 @@ namespace __Scripts
             StartCoroutine(ReturnToPoolAfterDelay(newProjectile, 5f));
         }
 
-
-
         #endregion
 
         #region Helper methods
+        /// <summary>
+        /// This helper method re-populates the projectile pool
+        /// </summary>
+        /// <param name="selectedIndex"></param>
+        private void HandleDropdownValueChanged(int selectedIndex)
+        {
+            ProjectilePool.Instance.SetProjectileType(Prefabs.Fetch.LaserProjectiles[selectedIndex]);
+        }
         
         IEnumerator ReturnToPoolAfterDelay(GameObject obj, float delay)
         {
@@ -392,6 +396,28 @@ namespace __Scripts
             }
 
             return direction;
+        }
+
+        [HorizontalGroup("Split", 0.5f)]
+        [Button(ButtonSizes.Large, Icon = SdfIconType.NodeMinus), GUIColor(0.8f, 0.5f, 0.17f)]
+        public void PreviousProjectile()
+        {
+            if (selectedProjectileIndex - 1 >= 0)
+            {
+                selectedProjectileIndex--;
+                Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
+            }
+        }
+        
+        [HorizontalGroup("Split", 0.5f)]
+        [Button(ButtonSizes.Large, Icon = SdfIconType.NodePlus), GUIColor(1f, 1f, 0.215f)]
+        public void NextProjectile()
+        {
+            if (selectedProjectileIndex + 1 >= 0 && selectedProjectileIndex + 1 < Prefabs.Fetch.LaserProjectiles.Length)
+            {
+                selectedProjectileIndex++;
+                Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
+            }
         }
 
         #endregion

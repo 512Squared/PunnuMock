@@ -40,7 +40,7 @@ namespace __Scripts
         {
             if (!canRegenerate || isRegenerating || health >= maxHealth) return;
 
-            foreach (Turret turret in TurretsManager.Instance.turretList)
+            foreach (Turret turret in TurretsManager.Instance.GetTurretList())
                 if (turret.HasTarget)
                     return;
 
@@ -73,7 +73,7 @@ namespace __Scripts
             while (health < maxHealth)
             {
                 // Regen needs to stop when being attacked
-                foreach (Turret turret in TurretsManager.Instance.turretList)
+                foreach (Turret turret in TurretsManager.Instance.GetTurretList())
                     if (turret.CanAttackTarget())
                     {
                         isRegenerating = false;

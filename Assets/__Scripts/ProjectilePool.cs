@@ -8,27 +8,17 @@ namespace __Scripts
     {
         public GameObject projectilePrefab;
         [SerializeField] private Transform projectilePool;
-        
-
-        private void Start()
-        {
-            projectilePrefab = Prefabs.Fetch.laserProjectile;
-        }
-
         private Queue<GameObject> pool = new Queue<GameObject>();
 
         public GameObject Get()
         {
-            if (pool.Count == 0)
-            {
-                AddObjects(1);
-            }
-        
+            if (pool.Count == 0) AddObjects(1);
             return pool.Dequeue();
         }
 
         public void Return(GameObject objectToReturn)
         {
+            if (objectToReturn == null) return;
             objectToReturn.SetActive(false);
             pool.Enqueue(objectToReturn);
         }
@@ -41,6 +31,18 @@ namespace __Scripts
                 newObject.SetActive(false);
                 pool.Enqueue(newObject);
             }
+        }
+        /// <summary>
+        /// This is purely for setup - allowing the DEV to experiment with different prefabs
+        /// </summary>
+        /// <param name="newProjectilePrefab"></param>
+        public void SetProjectileType(GameObject newProjectilePrefab)
+        {
+            projectilePrefab = newProjectilePrefab;
+            foreach(GameObject projectile in pool) Destroy(projectile); 
+            pool.Clear();
+            projectilePool.Clear();
+            AddObjects(10); 
         }
     }
 

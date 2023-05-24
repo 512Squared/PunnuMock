@@ -6,8 +6,16 @@ namespace __Scripts
 {
     public class TurretsManager : SingletonMonobehaviour<TurretsManager>
     {
-        public List<Turret> turretList;
+        [SerializeField] private List<Turret> turretList;
+        public List<Turret> TurretList
+        {
+            get => turretList;
+            set => turretList = value;
+        }
+
+        public List<Turret> GetTurretList()
+        {
+            return TurretList;
+        }
     }
-    
-    
 }
