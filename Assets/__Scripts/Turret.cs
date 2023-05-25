@@ -432,6 +432,7 @@ namespace __Scripts
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodeMinus), GUIColor(0.8f, 0.5f, 0.17f)]
         public void PreviousProjectile()
         {
+            if (debugOn) Debug.Log($"Previous PROJECTILE set");
             if (currentProjectileIndex - 1 >= 0)
             {
                 currentProjectileIndex--;
@@ -443,6 +444,7 @@ namespace __Scripts
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodePlus), GUIColor(1f, 1f, 0.215f)]
         public void NextProjectile()
         {
+            if (debugOn) Debug.Log($"Next PROJECTILE set");
             if (currentProjectileIndex + 1 >= 0 && currentProjectileIndex + 1 < Prefabs.Fetch.LaserProjectiles.Length)
             {
                 currentProjectileIndex++;
