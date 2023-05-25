@@ -10,7 +10,7 @@ namespace __Scripts
         public GameObject LaserProjectile => laserProjectiles[indexLP];
         [SerializeField] private GameObject[] laserProjectiles;
         [SerializeField] private GameObject[] missileProjectiles;
-        
+
         private int indexLP;
         public GameObject[] LaserProjectiles => laserProjectiles;
 

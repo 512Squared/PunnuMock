@@ -50,6 +50,12 @@ namespace __Scripts
 
         [Tooltip("Turret's range")] [SerializeField]
         private float range = 10f;
+        
+        [Tooltip("Turret's aim [shoot] speed. Turret cannot shoot until aim completes.")]
+        [SerializeField] private float aimSpeed;
+        
+        [Tooltip("Turret's predictive aiming improves aim accuracy when target is moving")]
+        [SerializeField] private float predictiveAimFactor = 1.0f;
 
         [Tooltip("Width of the targeting arc - switch debug on to make visible in Scene view")] [SerializeField]
         private float turretTargetArc;
@@ -87,7 +93,7 @@ namespace __Scripts
         private Color lastObstacleColor;
         private Color debugObstacleColor = Color.yellow;
         private float timeSinceLastAttack;
-        public int selectedProjectileIndex = 0;
+        public int currentProjectileIndex;
 
         public bool HasTarget => hasTarget;
 
@@ -109,7 +115,7 @@ namespace __Scripts
             Cursor.visible = false;
             defaultRotationBase = transform.rotation;
             defaultRotationBarrel = turretGun.localRotation;
-            Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
+            Prefabs.Fetch.SetLaserProjectileIndex(currentProjectileIndex);
         }
 
         /// <summary>
@@ -142,10 +148,10 @@ namespace __Scripts
                 {
                     if (turretState != TurretState.ReadyToFire) AimAtTarget(targetsInRange[0].transform);
 
-                    HeadTransform headTransform = target.GetComponentInChildren<HeadTransform>(); // optional for fine-tuning impact point on target
-                    Vector3 impactPoint = headTransform ? headTransform.transform.position : target.transform.position;
+                    ImpactPoint impactPoint = target.GetComponentInChildren<ImpactPoint>(); // optional for fine-tuning impact point on target
+                    Vector3 impactPosition = impactPoint ? impactPoint.transform.position : target.transform.position;
 
-                    isObstacleBlocking = ProcessTargetingFSM(target, impactPoint);
+                    isObstacleBlocking = ProcessTargetingFSM(target, impactPosition);
 
                     Debug.Log(
                         $"TARGET availability: State - Angle - Arc - Obstacle \nFSM : {turretState} | TRUE :  {insideBarrelAngle} | TRUE : {insideTurretArc} | FALSE : {isObstacleBlocking}");
@@ -191,22 +197,22 @@ namespace __Scripts
             // Rotate the turret base horizontally to face the target
             Vector3 directionToTargetHorizontal = (new Vector3(target.position.x, turretBase.position.y, target.position.z) - turretBase.position).normalized;
             Quaternion targetRotationHorizontal = Quaternion.LookRotation(directionToTargetHorizontal);
-            turretBase.DORotateQuaternion(targetRotationHorizontal, 0.5f);
+            turretBase.DORotateQuaternion(targetRotationHorizontal, aimSpeed);
 
-            HeadTransform headTransform = target.GetComponentInChildren<HeadTransform>(); // optional for fine-tuning impact point on target
-            Vector3 impactPoint = headTransform ? headTransform.transform.position : target.transform.position;
+            ImpactPoint impactPoint = target.GetComponentInChildren<ImpactPoint>(); // optional for fine-tuning impact point on target
+            Vector3 impactPos = impactPoint ? impactPoint.transform.position : target.transform.position;
 
             // Rotate the turret barrel vertically to aim at the target
-            Vector3 directionToTargetFromBarrel = (impactPoint - turretGun.position).normalized;
+            Vector3 directionToTargetFromBarrel = (impactPos - turretGun.position).normalized;
 
             // We create an offset vector for fine-tuning
             Vector3 offsetVector = directionToTargetFromBarrel * turretGunElevationOffset;
 
             // We create the final aim vector, applying the offset
-            Vector3 finalAimVector = impactPoint + offsetVector;
+            Vector3 finalAimVector = impactPos + offsetVector;
 
             // Use LookAt tween to aim the turretGun using the final aim vector - set the FSM
-            turretGun.DOLookAt(finalAimVector, 1f)
+            turretGun.DOLookAt(finalAimVector, aimSpeed)
                 .OnComplete(() =>
                 {
                     turretState = TurretState.ReadyToFire;
@@ -277,7 +283,7 @@ namespace __Scripts
             {
                 attack = true;
                 IDamageable damageable = target.GetComponent<IDamageable>();
-                if (damageable != null) Shoot();
+                if (damageable != null) Shoot(target);
                 timeSinceLastAttack = 0;
                 turretState = TurretState.Aiming;
                 if (debugOn) Debug.Log($"ATTACK carried out | Turret: {transform.name}");
@@ -294,9 +300,13 @@ namespace __Scripts
         /// <summary>
         /// Shoot() makes use of object pooling via ProjectPool on the Turret Manager game object. Targeting variance is also applied here (initial value 10%)
         /// </summary>
-        private void Shoot()
+        private void Shoot(Transform targetTransform)
         {
             if (debugOn) Debug.Log($"SHOOT called");
+
+            CharacterController targetController = targetTransform.GetComponent<CharacterController>();
+            Transform impactTransform = targetTransform.GetComponentInChildren<ImpactPoint>().transform;
+
             mainCamera.Play(mainCamera.clip.name);
 
             GameObject newProjectile = ProjectilePool.Instance.Get();
@@ -308,12 +318,29 @@ namespace __Scripts
             main.startSpeed = laserProjectileSpeed;
 
             newProjectile.transform.position = muzzleFlashPoint.position; // Set the initial position to the muzzle's position
-            newProjectile.transform.forward = spreadBullets ? AddVariance(muzzleFlashPoint.forward) : muzzleFlashPoint.forward; // Set the direction
-            newProjectile.transform.rotation = muzzleFlashPoint.rotation;
+
+            // Predictive Aiming
+            Vector3 directionToTarget = impactTransform.position - muzzleFlashPoint.position;
+            float distanceToTarget = directionToTarget.magnitude;
+            float timeToReachTarget = distanceToTarget / laserProjectileSpeed * predictiveAimFactor; // Estimated time to reach target
+
+            Vector3 targetPredictivePosition = PredictPosition(impactTransform.position, targetController.velocity, timeToReachTarget);
+            directionToTarget = (targetPredictivePosition - muzzleFlashPoint.position).normalized;
+
+            newProjectile.transform.forward = spreadBullets ? AddVariance(directionToTarget) : directionToTarget; // Set the direction
+            newProjectile.transform.rotation = Quaternion.LookRotation(directionToTarget);
             newProjectile.SetActive(true);
             ps.Play();
             StartCoroutine(ReturnToPoolAfterDelay(newProjectile, 5f));
         }
+
+        private Vector3 PredictPosition(Vector3 targetPosition, Vector3 targetVelocity, float timeToReachTarget)
+        {
+            // Estimate where the target will be in the future based on its current velocity and the time it will take for the projectile to reach the target
+            Vector3 predictivePosition = targetPosition + targetVelocity * timeToReachTarget;
+            return predictivePosition;
+        }
+
 
         #endregion
 
@@ -405,10 +432,10 @@ namespace __Scripts
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodeMinus), GUIColor(0.8f, 0.5f, 0.17f)]
         public void PreviousProjectile()
         {
-            if (selectedProjectileIndex - 1 >= 0)
+            if (currentProjectileIndex - 1 >= 0)
             {
-                selectedProjectileIndex--;
-                Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
+                currentProjectileIndex--;
+                Prefabs.Fetch.SetLaserProjectileIndex(currentProjectileIndex);
             }
         }
 
@@ -416,10 +443,10 @@ namespace __Scripts
         [Button(ButtonSizes.Large, Icon = SdfIconType.NodePlus), GUIColor(1f, 1f, 0.215f)]
         public void NextProjectile()
         {
-            if (selectedProjectileIndex + 1 >= 0 && selectedProjectileIndex + 1 < Prefabs.Fetch.LaserProjectiles.Length)
+            if (currentProjectileIndex + 1 >= 0 && currentProjectileIndex + 1 < Prefabs.Fetch.LaserProjectiles.Length)
             {
-                selectedProjectileIndex++;
-                Prefabs.Fetch.SetLaserProjectileIndex(selectedProjectileIndex);
+                currentProjectileIndex++;
+                Prefabs.Fetch.SetLaserProjectileIndex(currentProjectileIndex);
             }
         }
 

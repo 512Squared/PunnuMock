@@ -12,27 +12,24 @@ namespace __Scripts
     {
         [PropertySpace(SpaceBefore = 10, SpaceAfter = 10)] [SerializeField]
         private bool debugOn;
-        [Title("Stats")]
-        [SerializeField] private float health = 100;
-        [SerializeField] private float maxHealth = 100;
-        
-        [Title("Settings")]
-        [SerializeField] private bool canRegenerate;
-        [ShowIf("canRegenerate")] 
-        public bool regenInHealingCircleOnly;
 
-        
-        [ShowIf("canRegenerate")]
-        [SerializeField][PropertySpace(SpaceBefore = 0, SpaceAfter = 10)] private float regenSpeed = 2;
+        [Title("Stats")] [SerializeField] private float health = 100;
+        [SerializeField] private float maxHealth = 100;
+
+        [Title("Settings")] [SerializeField] private bool canRegenerate;
+        [ShowIf("canRegenerate")] public bool regenInHealingCircleOnly;
+
+
+        [ShowIf("canRegenerate")] [SerializeField] [PropertySpace(SpaceBefore = 0, SpaceAfter = 10)]
+        private float regenSpeed = 2;
+
         [SerializeField] private Image bloodSplatter;
         [SerializeField] private float splatterAlphaMax = 0.5f;
         public CinemachineImpulseSource cameraImpulse;
-        
-        [Title("Info only")]
-        [ShowIf("canRegenerate")]
-        [SerializeField]
+
+        [Title("Info only")] [ShowIf("canRegenerate")] [SerializeField]
         private bool isRegenerating;
-        
+
         private Coroutine regenCoroutine;
 
 
@@ -52,7 +49,7 @@ namespace __Scripts
 
             StartCoroutine(HealthRegeneration());
         }
-        
+
         private void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag("RegenCircle"))
@@ -60,7 +57,8 @@ namespace __Scripts
                 if (regenInHealingCircleOnly && regenCoroutine == null)
                 {
                     regenCoroutine = StartCoroutine(HealthRegeneration());
-                    StartCoroutine(AudioController.FadeInClip(AudioController.Instance.GetHealing(), 0.3f, AudioController.Instance.healingAudioSource, 0.162f));
+                    StartCoroutine(AudioController.FadeInClip(AudioController.Instance.GetHealing(), 0.3f, AudioController.Instance.healingAudioSource,
+                        0.162f));
                     Debug.Log($"Regen has begun");
                 }
             }
@@ -68,19 +66,18 @@ namespace __Scripts
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("RegenCircle")) 
+            if (other.CompareTag("RegenCircle"))
             {
-                if(regenInHealingCircleOnly && regenCoroutine != null)
+                if (regenInHealingCircleOnly && regenCoroutine != null)
                 {
                     StopCoroutine(regenCoroutine);
                     StartCoroutine(AudioController.FadeOutClip(7f, AudioController.Instance.healingAudioSource));
                     regenCoroutine = null;
                     Debug.Log($"Regen has ended");
                 }
-                
             }
         }
-        
+
 
         /// <summary>
         /// Implements the IDamageable interface, but also invokes a system event to update the UI and health bars. Sends an 'hit' impulse to the camera (some juice)
@@ -141,6 +138,5 @@ namespace __Scripts
             if (DOTween.IsTweening(bloodSplatter)) DOTween.Kill(bloodSplatter);
             bloodSplatter.DOFade(splatterAlpha.a, 0.5f);
         }
-
     }
 }

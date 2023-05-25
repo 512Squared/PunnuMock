@@ -32,6 +32,7 @@ namespace __Scripts
                 pool.Enqueue(newObject);
             }
         }
+
         /// <summary>
         /// This is purely for setup - allows Devs to easily experiment with different prefabs during game play
         /// </summary>
@@ -39,11 +40,10 @@ namespace __Scripts
         public void SetProjectileType(GameObject newProjectilePrefab)
         {
             projectilePrefab = newProjectilePrefab;
-            foreach(GameObject projectile in pool) Destroy(projectile); 
+            foreach (GameObject projectile in pool) Destroy(projectile);
             pool.Clear();
             projectilePool.Clear();
-            AddObjects(10); 
+            AddObjects(10);
         }
     }
-
 }

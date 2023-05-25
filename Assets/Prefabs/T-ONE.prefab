@@ -347,6 +347,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   range: 33.6
+  aimSpeed: 0.5
+  predictiveAimFactor: 1.2
   turretTargetArc: 76.56
   safeZoneRange: 9.7
   turretFiringAngle: -28.6
@@ -356,4 +358,4 @@ MonoBehaviour:
   damage: 10
   spreadBullets: 1
   bulletSpread: {x: 0.1, y: 0.1, z: 0.1}
-  selectedProjectileIndex: 0
+  currentProjectileIndex: 10
