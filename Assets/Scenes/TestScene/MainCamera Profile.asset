@@ -33,16 +33,16 @@ MonoBehaviour:
     m_Value: 1
   gaussianStart:
     m_OverrideState: 1
-    m_Value: 31.13
+    m_Value: 38.5
   gaussianEnd:
     m_OverrideState: 1
-    m_Value: 51.2
+    m_Value: 90
   gaussianMaxRadius:
     m_OverrideState: 1
-    m_Value: 0.878
+    m_Value: 1.018
   highQualitySampling:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   focusDistance:
     m_OverrideState: 1
     m_Value: 139.67
@@ -261,13 +261,13 @@ MonoBehaviour:
     m_Value: 2
   contrast:
     m_OverrideState: 1
-    m_Value: 0.986
+    m_Value: 1.031
   daltonize:
     m_OverrideState: 0
     m_Value: 0
   sepia:
     m_OverrideState: 1
-    m_Value: 0.174
+    m_Value: 0.394
   tintColor:
     m_OverrideState: 0
     m_Value: {r: 1, g: 1, b: 1, a: 0}
@@ -282,10 +282,10 @@ MonoBehaviour:
     m_Value: 1
   lutIntensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.337
   lutTexture:
     m_OverrideState: 1
-    m_Value: {fileID: 2800000, guid: 31149192105396f43941d94e6e19c9e1, type: 3}
+    m_Value: {fileID: 2800000, guid: b16d71f8396801f4cae410453a28d944, type: 3}
     dimension: 1
   bloomIntensity:
     m_OverrideState: 0

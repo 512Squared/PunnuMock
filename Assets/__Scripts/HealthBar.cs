@@ -56,21 +56,22 @@ namespace __Scripts
             healthSlider.minValue = MinHealth;
             healthSlider.value = MaxHealth;
             currentHealth = MaxHealth;
-            fill.color =  gradient.Evaluate(1f);
+            Color fillColor = gradient.Evaluate(1f);
+            fillColor.a = 0.45f;
+            fill.color = fillColor;
         }
 
         public void ReceiveDamage(float damage)
         {
             currentHealth -= damage;
             healthSlider.DOValue(currentHealth, damageTweenDuration).SetEase(damageEaseType);
-            fill.color = gradient.Evaluate(healthSlider.normalizedValue);
+            Color fillColor = gradient.Evaluate(healthSlider.normalizedValue);
+            fillColor.a = 0.45f;
+            fill.color = fillColor;
+    
             Debug.Log($"Damage received: {damage}");
         }
 
-        /// <summary>
-        /// This method handles the UI update for regen, while regen logic is handled in the HealthController. This class listens for the OnRegeneration event 
-        /// </summary>
-        /// <param name="health"></param>
         public void Regeneration(float health)
         {
             currentHealth = health;
@@ -78,7 +79,7 @@ namespace __Scripts
             Color initialColor = heartColor.color;
             Color glowColor = new Color(1f, 0.0078f, 0.0078f); // equivalent to #FF0202
             PlayHeartbeat();
-            
+    
             DOTween.Sequence()
                 .Append(heartColor.DOColor(glowColor, 0.3f).SetEase(Ease.InOutSine))
                 .Join(heartScale.DOScale(finalScale, 0.3f).SetEase(heartbeatEaseType))
@@ -87,11 +88,12 @@ namespace __Scripts
                 .Join(heartColor.DOColor(initialColor, 0.15f).SetEase(Ease.InOutSine))
                 .OnComplete(() =>
                 {
-                    fill.color = gradient.Evaluate(healthSlider.normalizedValue);
+                    Color fillColor = gradient.Evaluate(healthSlider.normalizedValue);
+                    fillColor.a = 0.45f;
+                    fill.color = fillColor;
                     heartScale.localScale = new Vector3 (0.8f, 0.8f, 0.8f);
                 });
         }
-
         private void PlayHeartbeat()
         {
             float healthPercentage = currentHealth / MaxHealth;

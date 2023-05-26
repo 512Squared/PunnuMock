@@ -32,6 +32,9 @@ namespace __Scripts
 
         [Tooltip("Turret's gun")] [SerializeField]
         private Transform turretGun;
+        
+        [Tooltip("Turret's gun")] [SerializeField]
+        private Transform gunBarrel;
 
         [Tooltip("Turret's rotating base - gun's parent object")] [SerializeField]
         private Transform turretBase;
@@ -68,6 +71,9 @@ namespace __Scripts
 
         [Tooltip("Used for fine-tuning gun direction when targeting")] [SerializeField]
         private float turretGunElevationOffset;
+        
+        [Tooltip("Type of recoil 'ease' effect")]
+        [SerializeField] private Ease gunBarrelEase;
 
         [Tooltip("Cooldown between attacks")] [SerializeField]
         private float attackCooldown = 1f;
@@ -94,6 +100,7 @@ namespace __Scripts
         private Color debugObstacleColor = Color.yellow;
         private float timeSinceLastAttack;
         public int currentProjectileIndex;
+        
 
         public bool HasTarget => hasTarget;
 
@@ -319,6 +326,13 @@ namespace __Scripts
 
             newProjectile.transform.position = muzzleFlashPoint.position; // Set the initial position to the muzzle's position
 
+            // Add gun barrel recoil effect
+            Vector3 recoilOffset = new Vector3(0, 0, -0.571f);
+            float recoilDuration = 0.12f; 
+            gunBarrel.transform.DOLocalMove(recoilOffset, recoilDuration).SetRelative().SetLoops(2, LoopType.Yoyo).SetEase(gunBarrelEase);
+
+            
+            
             // Predictive Aiming
             Vector3 directionToTarget = impactTransform.position - muzzleFlashPoint.position;
             float distanceToTarget = directionToTarget.magnitude;
@@ -437,6 +451,7 @@ namespace __Scripts
             {
                 currentProjectileIndex--;
                 Prefabs.Fetch.SetLaserProjectileIndex(currentProjectileIndex);
+                Prefabs.Fetch.ShowProjectileNumber();
             }
         }
 
@@ -449,6 +464,7 @@ namespace __Scripts
             {
                 currentProjectileIndex++;
                 Prefabs.Fetch.SetLaserProjectileIndex(currentProjectileIndex);
+                Prefabs.Fetch.ShowProjectileNumber();
             }
         }
 

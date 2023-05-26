@@ -110,7 +110,7 @@ namespace __Scripts
                 Actions.OnRegeneration?.Invoke(health);
                 UpdateRegenEffect();
             }
-
+            StartCoroutine(AudioController.FadeOutClip(17f, AudioController.Instance.healingAudioSource));
             isRegenerating = false;
         }
 
